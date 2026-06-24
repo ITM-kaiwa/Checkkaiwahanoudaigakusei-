@@ -89,8 +89,8 @@
         <div id="questionsContainer" class="space-y-6"></div>
     </div>
 
-   <footer>
-        <p>© 2026 Tài liệu kiểm tra | Thiết kế bởi Thuận / ITM-Group, Ver2.52</p>
+    <footer>
+        <p>© 2026 Tài liệu kiểm tra | Thiết kế bởi Thuận / Jyotaro, Ver2.60</p>
     </footer>
 
     <script>
@@ -227,13 +227,23 @@
             lessonQuestions.forEach(q => {
                 const questionDiv = document.createElement('div');
                 questionDiv.className = 'question-card flex items-center justify-between p-3 border-b border-gray-200';
+                
+                // 【仕様変更部分】デフォルトで問題文を非表示(hidden)にし、目隠し文を表示
                 questionDiv.innerHTML = `
-                    <span class="text-lg text-gray-800">${q.id}: ${q.text}</span>
-                    <button class="play-audio bg-teal-100 p-2 rounded-full hover:bg-teal-200 transition duration-200" data-audio="${q.audioUrl}">
-                        <svg class="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707A1 1 0 0112 5v14a1 1 0 01-1.707.707L5.586 15z"></path>
-                        </svg>
-                    </button>
+                    <div class="flex-1 mr-4">
+                        <span class="text-lg text-gray-800 font-medium hidden question-text">${q.id}: ${q.text}</span>
+                        <span class="text-lg text-gray-400 italic placeholder-text">${q.id}: (Nghe âm thanh)</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <button class="view-text bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-md text-sm font-semibold hover:bg-indigo-100 transition duration-150 active:scale-95 select-none">
+                            Xem
+                        </button>
+                        <button class="play-audio bg-teal-100 p-2 rounded-full hover:bg-teal-200 transition duration-200 active:scale-95">
+                            <svg class="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707A1 1 0 0112 5v14a1 1 0 01-1.707.707L5.586 15z"></path>
+                            </svg>
+                        </button>
+                    </div>
                 `;
                 lessonDiv.appendChild(questionDiv);
             });
@@ -261,13 +271,22 @@
 
                 currentAudio.onerror = () => {
                     isPlaying = false;
-                    // 有効なURLの時のみエラーを表示（stopボタンによる意図的なリセット時は除外）
                     if (currentAudio && currentAudio.src && !currentAudio.src.endsWith('/') && currentAudio.src !== window.location.href) {
                         showError(`Error loading audio file: ${currentAudio.src}`);
                         playNext();
                     }
                 };
             }
+        }
+
+        // スマホの自動再生制限をユーザーのタップ時に解除する関数
+        function unlockAudio() {
+            initAudio();
+            try {
+                currentAudio.play().then(() => {
+                    currentAudio.pause();
+                }).catch(() => {});
+            } catch (e) {}
         }
 
         // 自作「＋」「ー」ボタンの処理
@@ -297,7 +316,6 @@
         function playAudio(url) {
             initAudio();
             try {
-                // スマホ対策：常に同じインスタンスに新しいURLをセットして再生する
                 currentAudio.src = url;
                 currentAudio.play().then(() => {
                     isPlaying = true;
@@ -316,44 +334,66 @@
         function playNext() {
             if (playbackQueue.length > 0 && currentIndex < playbackQueue.length - 1) {
                 currentIndex++;
-                
                 const pauseSeconds = pauseInput ? parseFloat(pauseInput.value) || 0 : 3;
 
-                // タイマーを挟んでも、同じプレイヤーオブジェクトを維持しているためスマホでも再生が継続します
                 pauseTimeout = setTimeout(() => {
                     if (playbackQueue.length > 0) {
                         playAudio(playbackQueue[currentIndex]);
                     }
                 }, pauseSeconds * 1000);
-                
             } else {
                 currentIndex = 0;
                 playbackQueue = [];
             }
         }
 
-        // 個別再生ボタン（イベントデリゲーション）
+        // 質問表示・音声再生ボタン（イベントデリゲーションでまとめてキャッチ）
         questionsContainer.addEventListener('click', (event) => {
-            const button = event.target.closest('.play-audio');
-            if (button) {
+            // 1. 「Xem」ボタンが押されたとき
+            const viewButton = event.target.closest('.view-text');
+            if (viewButton) {
+                initAudio(); // スマホ対策の動線確保
+                const card = viewButton.closest('.question-card');
+                const textNode = card.querySelector('.question-text');
+                const placeholderNode = card.querySelector('.placeholder-text');
+                
+                if (textNode.classList.contains('hidden')) {
+                    textNode.classList.remove('hidden');
+                    placeholderNode.classList.add('hidden');
+                    viewButton.textContent = 'Ẩn'; // ボタンテキストを「隠す」に変更
+                    viewButton.classList.replace('bg-indigo-55', 'bg-gray-150');
+                } else {
+                    textNode.classList.add('hidden');
+                    placeholderNode.classList.remove('hidden');
+                    viewButton.textContent = 'Xem'; // ボタンテキストを「見る」に戻す
+                    viewButton.classList.replace('bg-gray-150', 'bg-indigo-55');
+                }
+                return;
+            }
+
+            // 2. 個別音声ボタンが押されたとき
+            const audioButton = event.target.closest('.play-audio');
+            if (audioButton) {
+                unlockAudio();
                 if (pauseTimeout) clearTimeout(pauseTimeout);
                 playbackQueue = [];
                 currentIndex = 0;
-                const url = button.getAttribute('data-audio');
-                playAudio(url); // ユーザーの直タップなので確実に再生されます
+                const url = audioButton.getAttribute('data-audio');
+                playAudio(url);
             }
         });
 
         // 「Chọn bài」ボタンの処理
         const lessonSelectContainer = document.getElementById('lessonSelectContainer');
         document.getElementById('playLessonBtn').addEventListener('click', () => {
-            initAudio();
+            unlockAudio();
             lessonSelectContainer.classList.remove('hidden');
             lessonSelect.focus();
         });
 
         // 「Hiển thị（確定）」ボタンの処理
         document.getElementById('confirmBtn').addEventListener('click', () => {
+            unlockAudio();
             const selectedLessons = Array.from(lessonSelect.selectedOptions).map(option => parseInt(option.value));
             if (selectedLessons.length === 0) {
                 showError('Please select at least one lesson.');
@@ -369,15 +409,12 @@
             });
 
             if (pauseTimeout) clearTimeout(pauseTimeout);
-            
-            // キューを作成
             playbackQueue = questions
                 .filter(q => selectedLessons.includes(q.lesson))
                 .map(q => q.audioUrl);
             currentIndex = 0;
 
             if (playbackQueue.length > 0) {
-                // 【スマホ完全対策】タップした瞬間に、ダミーを挟まず直接1本目の音声を再生開始する
                 playAudio(playbackQueue[currentIndex]);
             } else {
                 showError('No audio files available for selected lessons.');
@@ -387,17 +424,15 @@
 
         // 「Chọn tất cả」ボタンの処理
         document.getElementById('playAllBtn').addEventListener('click', () => {
+            unlockAudio();
             document.querySelectorAll('.lesson-div').forEach(div => {
                 div.classList.remove('hidden');
             });
             if (pauseTimeout) clearTimeout(pauseTimeout);
-            
-            // キューを作成
             playbackQueue = questions.map(q => q.audioUrl);
             currentIndex = 0;
 
             if (playbackQueue.length > 0) {
-                // 【スマホ完全対策】タップした瞬間に、ダミーを挟まず直接1本目の音声を再生開始する
                 playAudio(playbackQueue[currentIndex]);
             } else {
                 showError('No audio files available.');
@@ -405,20 +440,16 @@
             lessonSelectContainer.classList.add('hidden');
         });
 
-        // 「Dừng」ボタンの処理（エラー赤枠のバグも修正済み）
+        // 「Dừng」ボタンの処理
         document.getElementById('stopBtn').addEventListener('click', () => {
             if (pauseTimeout) clearTimeout(pauseTimeout); 
             
             if (currentAudio) {
-                // ストップ時のエラー誤作動を防ぐため一時的にリスナーを退避
                 currentAudio.onerror = null; 
                 currentAudio.pause();
-                
-                // プレイヤーを安全にリセット
                 currentAudio.src = ""; 
                 try { currentAudio.load(); } catch(e) {}
                 
-                // 再度リスナーを登録
                 currentAudio.onerror = () => {
                     isPlaying = false;
                     if (currentAudio && currentAudio.src && !currentAudio.src.endsWith('/') && currentAudio.src !== window.location.href) {
