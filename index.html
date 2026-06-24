@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -214,11 +215,22 @@
             questionsContainer.appendChild(lessonDiv);
         });
 
-        // Audio playback logic
+// Audio playback logic
         let currentAudio = null;
         let isPlaying = false;
         let playbackQueue = [];
         let currentIndex = 0;
+        let pauseTimeout = null; // 待機タイマーを管理する変数
+
+        // スマホの自動再生制限をユーザーのタップ時に解除する関数
+        function unlockAudio() {
+            // 一度適当な音声オブジェクトを作成して、ユーザー操作イベント内で再生/ロードをシミュレート
+            if (!currentAudio) {
+                currentAudio = new Audio();
+            }
+            // 空の状態でloadまたはplayを呼び出すことでブラウザのオーディオチャンネルを開放
+            currentAudio.load();
+        }
 
         // Error message display function
         const errorMessageDiv = document.getElementById('errorMessage');
@@ -243,7 +255,6 @@
                 }).catch(error => {
                     isPlaying = false;
                     showError(`Failed to play audio for ${url}: ${error.message}`);
-                    // Move to next audio in queue if available
                     playNext();
                 });
 
@@ -262,38 +273,38 @@
                 showError(`Error initializing audio for ${url}: ${error.message}`);
             }
         }
-// Helper function to handle queue progression
-// ポーズの秒数を指定（例: 3秒 の場合は 3 と変更してください）
-const pauseSeconds = 3; 
 
-//
-function playNext() {
-    if (playbackQueue.length > 0 && currentIndex < playbackQueue.length - 1) {
-        currentIndex++;
-        
-        // 指定した秒数（ミリ秒換算）だけ待ってから次の音声を再生
-        setTimeout(() => {
-            // 待機中に「ストップ」ボタンが押されてキューがクリアされていないか確認
-            if (playbackQueue.length > 0) {
-                playAudio(playbackQueue[currentIndex]);
+        // Helper function to handle queue progression
+        function playNext() {
+            if (playbackQueue.length > 0 && currentIndex < playbackQueue.length - 1) {
+                currentIndex++;
+                
+                // 入力ボックスから現在のポーズ秒数を取得（デフォルトは3秒、空なら0秒）
+                const pauseInput = document.getElementById('pauseInput');
+                const pauseSeconds = pauseInput ? parseFloat(pauseInput.value) || 0 : 3;
+
+                // 指定した秒数待ってから次の音声を再生
+                pauseTimeout = setTimeout(() => {
+                    if (playbackQueue.length > 0) {
+                        playAudio(playbackQueue[currentIndex]);
+                    }
+                }, pauseSeconds * 1000);
+                
+            } else {
+                currentIndex = 0;
+                playbackQueue = [];
             }
-        }, pauseSeconds * 1000); 
-        
-    } else {
-        currentIndex = 0;
-        playbackQueue = [];
-    }
-}
+        }
 
         // イベントデリゲーションを使用して、動的に追加されたボタンのクリックを確実に捕捉する
         questionsContainer.addEventListener('click', (event) => {
-            // クリックされた要素、またはその親に .play-audio があるかチェック
             const button = event.target.closest('.play-audio');
             if (button) {
-                const url = button.getAttribute('data-audio');
-                // 個別再生時は自動再生キューをクリア
+                unlockAudio(); // スマホ対策
+                if (pauseTimeout) clearTimeout(pauseTimeout);
                 playbackQueue = [];
                 currentIndex = 0;
+                const url = button.getAttribute('data-audio');
                 playAudio(url);
             }
         });
@@ -301,12 +312,14 @@ function playNext() {
         // Toggle lesson selection visibility
         const lessonSelectContainer = document.getElementById('lessonSelectContainer');
         document.getElementById('playLessonBtn').addEventListener('click', () => {
+            unlockAudio(); // スマホ対策（() の付け忘れを修正）
             lessonSelectContainer.classList.remove('hidden');
             lessonSelect.focus();
         });
 
         // Confirm lesson selection and play audio
         document.getElementById('confirmBtn').addEventListener('click', () => {
+            unlockAudio(); // スマホ対策
             const selectedLessons = Array.from(lessonSelect.selectedOptions).map(option => parseInt(option.value));
             if (selectedLessons.length === 0) {
                 showError('Please select at least one lesson.');
@@ -321,7 +334,7 @@ function playNext() {
                 }
             });
 
-            // Update playback queue with audio from selected lessons
+            if (pauseTimeout) clearTimeout(pauseTimeout);
             playbackQueue = questions
                 .filter(q => selectedLessons.includes(q.lesson))
                 .map(q => q.audioUrl);
@@ -336,10 +349,11 @@ function playNext() {
 
         // Play all
         document.getElementById('playAllBtn').addEventListener('click', () => {
-            // Show all lessons
+            unlockAudio(); // スマホ対策
             document.querySelectorAll('.lesson-div').forEach(div => {
                 div.classList.remove('hidden');
             });
+            if (pauseTimeout) clearTimeout(pauseTimeout);
             playbackQueue = questions.map(q => q.audioUrl);
             currentIndex = 0;
             if (playbackQueue.length > 0) {
@@ -352,6 +366,7 @@ function playNext() {
 
         // Stop playback
         document.getElementById('stopBtn').addEventListener('click', () => {
+            if (pauseTimeout) clearTimeout(pauseTimeout); 
             if (currentAudio) {
                 currentAudio.pause();
                 currentAudio.currentTime = 0;
@@ -362,6 +377,8 @@ function playNext() {
             errorMessageDiv.classList.add('hidden');
             lessonSelectContainer.classList.add('hidden');
         });
+
+       
     </script>
 </body>
 </html>
