@@ -240,7 +240,7 @@
             questionsContainer.appendChild(lessonDiv);
         });
 
-      // Audio playback logic
+        // Audio playback logic
         let currentAudio = null;
         let isPlaying = false;
         let playbackQueue = [];
@@ -252,7 +252,7 @@
             if (!currentAudio) {
                 currentAudio = new Audio();
                 
-                // イベントリスナーもプレイヤーに1度だけ登録する形に変更
+                // イベントリスナーをプレイヤーに登録
                 currentAudio.onended = () => {
                     isPlaying = false;
                     playNext();
@@ -260,10 +260,11 @@
 
                 currentAudio.onerror = () => {
                     isPlaying = false;
-                    // エラーが出た場合も止まらずに次の音声へ進む
-                    const url = currentAudio ? currentAudio.src : "unknown";
-                    showError(`Error loading audio file: ${url}`);
-                    playNext();
+                    // 再生中かつパスが空ではない有効なエラーのときのみ表示
+                    if (currentAudio && currentAudio.src && !currentAudio.src.endsWith('/')) {
+                        showError(`Error loading audio file: ${currentAudio.src}`);
+                        playNext();
+                    }
                 };
             }
         }
@@ -271,8 +272,29 @@
         // スマホの自動再生制限をユーザーのタップ時に解除する関数
         function unlockAudio() {
             initAudio();
-            currentAudio.load(); // プレイヤーをブラウザに登録・アクティブ化する
+            // srcがまだ空の段階でloadするとエラーになるブラウザがあるため、ダミーの無音を一度通すか、loadを外して再生の器だけ認識させる
+            try {
+                // 何も設定せずにplayして即pauseすることでオーディオコンテキストをアクティブにする
+                currentAudio.play().then(() => {
+                    currentAudio.pause();
+                }).catch(() => { /* 初回ダミーエラーは無視 */ });
+            } catch (e) {}
         }
+
+        // 【修正・安全版】「＋」「ー」ボタンのイベント処理（ロード順の影響を受けないよう定義）
+        const pauseInput = document.getElementById('pauseInput');
+        
+        document.getElementById('minusBtn').addEventListener('click', () => {
+            initAudio(); // プレイヤーの準備だけ行う（エラーを出すloadは呼ばない）
+            let val = parseInt(pauseInput.value) || 0;
+            if (val > 0) pauseInput.value = val - 1;
+        });
+
+        document.getElementById('plusBtn').addEventListener('click', () => {
+            initAudio(); // プレイヤーの準備だけ行う
+            let val = parseInt(pauseInput.value) || 0;
+            if (val < 30) pauseInput.value = val + 1;
+        });
 
         // Error message display function
         const errorMessageDiv = document.getElementById('errorMessage');
@@ -285,12 +307,10 @@
         }
 
         function playAudio(url) {
-            initAudio(); // プレイヤーがあるか確認
+            initAudio();
 
             try {
-                // スマホ対策：new Audioをせず、既存プレイヤーのsrcを書き換える
                 currentAudio.src = url;
-                
                 currentAudio.play().then(() => {
                     isPlaying = true;
                 }).catch(error => {
@@ -311,7 +331,6 @@
                 
                 const pauseSeconds = pauseInput ? parseFloat(pauseInput.value) || 0 : 3;
 
-                // タイマーを挟んでも、同じプレイヤー（currentAudio）を使い回すためスマホでもブロックされません
                 pauseTimeout = setTimeout(() => {
                     if (playbackQueue.length > 0) {
                         playAudio(playbackQueue[currentIndex]);
@@ -392,24 +411,25 @@
             lessonSelectContainer.classList.add('hidden');
         });
 
-       // Stop playback
+        // Stop playback
         document.getElementById('stopBtn').addEventListener('click', () => {
             if (pauseTimeout) clearTimeout(pauseTimeout); 
             
             if (currentAudio) {
-                // ストップ時のエラー誤作動を防ぐため、一時的にエラー処理を空にする
+                // ストップ時のエラー誤作動を防ぐため一時的にリスナーを外す
                 currentAudio.onerror = null; 
                 currentAudio.pause();
                 
-                // プレイヤーを安全に初期化
-                currentAudio.removeAttribute('src'); 
-                currentAudio.load();
+                // 安全に初期化
+                currentAudio.removeAttribute('src');
                 
-                // 次回再生のためにエラー処理を再登録（initAudioと同じ内容）
+                // リスナーの再登録
                 currentAudio.onerror = () => {
                     isPlaying = false;
-                    showError(`Error loading audio file: ${currentAudio.src}`);
-                    playNext();
+                    if (currentAudio && currentAudio.src && !currentAudio.src.endsWith('/')) {
+                        showError(`Error loading audio file: ${currentAudio.src}`);
+                        playNext();
+                    }
                 };
             }
             
