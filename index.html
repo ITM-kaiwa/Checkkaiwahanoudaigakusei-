@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IQ　会話チェック反応（大学生向け）</title>
+    <title>IQー会話チェック反応（大学生向け）</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Custom styles for multi-select and improved aesthetics */
@@ -90,7 +90,7 @@
     </div>
 
     <footer>
-        <p>© 2026 Tài liệu kiểm tra | Thiết kế bởi Thuận / ITM-Group, Ver2.653</p>
+        <p>© 2026 Tài liệu kiểm tra | Thiết kế bởi Thuận / ITM-Group, Ver2.654</p>
     </footer>
 
     <script>
@@ -259,7 +259,7 @@
 
         const pauseInput = document.getElementById('pauseInput');
 
-        // 安全なプレイヤー停止処理
+        // 安全なプレイヤー停止処理（srcは一切いじらない）
         function forceResetPlayer() {
             if (pauseTimeout) {
                 clearTimeout(pauseTimeout);
@@ -296,10 +296,11 @@
             }
         }
 
-        // スマホ制限解除
+        // メイン大ボタン用のスマホ制限解除（直後のplayを許可させる）
         function unlockAudio() {
             createAndSetupPlayer();
             try {
+                // playとpauseの衝突メッセージを防ぐため、エラーを完全にキャッチして無視する
                 currentAudio.play().then(() => { currentAudio.pause(); }).catch(() => {});
             } catch (e) {}
         }
@@ -333,9 +334,12 @@
                 currentAudio.play().then(() => {
                     isPlaying = true;
                 }).catch(error => {
-                    isPlaying = false;
-                    showError(`Failed to play audio for ${url}: ${error.message}`);
-                    if (playbackQueue.length > 0) playNext();
+                    // 意図的な割り込み停止によるエラーメッセージはユーザーに非表示にする
+                    if (error.name !== 'AbortError') {
+                        isPlaying = false;
+                        showError(`Failed to play audio: ${error.message}`);
+                        if (playbackQueue.length > 0) playNext();
+                    }
                 });
             } catch (error) {
                 isPlaying = false;
@@ -385,9 +389,7 @@
             // 2. 「個別スピーカー」ボタンが押されたとき
             const audioButton = event.target.closest('.play-audio');
             if (audioButton) {
-                unlockAudio(); 
-
-                // 割り込み時：走っている自動再生の予約とキューをすべて完全消去
+                // タイマーとキューを即座に破棄。unlockAudio()の衝突動線は通さず、直接本番再生へ。
                 if (pauseTimeout) {
                     clearTimeout(pauseTimeout);
                     pauseTimeout = null;
@@ -399,7 +401,7 @@
                     try { currentAudio.pause(); } catch(e) {}
                 }
 
-                // 選択されたURLを取得して直接再生
+                // ユーザーが直接タップしたイベント内なので、ダミー処理なしで100%安全にスマホ再生が通ります
                 const url = audioButton.getAttribute('data-audio');
                 playAudio(url);
             }
@@ -413,10 +415,10 @@
             lessonSelect.focus();
         });
 
-        // 青のボタンの確定「Hiển thị」の処理 【仕様：文字を目隠し状態にして表示。自動再生は絶対にしない】
+        // 青のボタンの確定「Hiển thị」の処理
         document.getElementById('confirmBtn').addEventListener('click', () => {
             forceResetPlayer(); 
-            unlockAudio();
+            createAndSetupPlayer(); // プレイヤーを初期化するのみ
 
             const selectedLessons = Array.from(lessonSelect.selectedOptions).map(option => parseInt(option.value));
             if (selectedLessons.length === 0) {
@@ -429,7 +431,6 @@
                 if (selectedLessons.includes(lessonNum)) {
                     div.classList.remove('hidden');
                     
-                    // すべての問題文をデフォルトの「非表示（目隠し状態）」にリセット
                     div.querySelectorAll('.question-card').forEach(card => {
                         card.querySelector('.question-text').classList.add('hidden');
                         card.querySelector('.placeholder-text').classList.remove('hidden');
@@ -443,7 +444,7 @@
             lessonSelectContainer.classList.add('hidden');
         });
 
-        // 緑のボタン「Chọn tất cả」の処理 【仕様：文字を目隠し状態のまま全表示 ＋ 最初から自動再生】
+        // 緑のボタン「Chọn tất cả」の処理
         document.getElementById('playAllBtn').addEventListener('click', () => {
             forceResetPlayer();
             unlockAudio();
@@ -451,7 +452,6 @@
             document.querySelectorAll('.lesson-div').forEach(div => {
                 div.classList.remove('hidden');
                 
-                // デフォルトは文字を「非表示（目隠し状態）」にする
                 div.querySelectorAll('.question-card').forEach(card => {
                     card.querySelector('.question-text').classList.add('hidden');
                     card.querySelector('.placeholder-text').classList.remove('hidden');
@@ -472,7 +472,7 @@
 
         // 「Dừng」ボタンの処理
         document.getElementById('stopBtn').addEventListener('click', () => {
-            forceResetPlayer(); // 安全に一時停止して巻き戻す
+            forceResetPlayer();
             errorMessageDiv.classList.add('hidden');
             lessonSelectContainer.classList.add('hidden');
         });
