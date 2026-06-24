@@ -247,12 +247,13 @@
         let currentIndex = 0;
         let pauseTimeout = null;
 
-        // 【スマホ完全対策】共通のオーディオプレイヤーを最初に1つだけ用意して使い回す
+        const pauseInput = document.getElementById('pauseInput');
+
+        // 共通オーディオプレイヤーの初期化
         function initAudio() {
             if (!currentAudio) {
                 currentAudio = new Audio();
                 
-                // イベントリスナーをプレイヤーに登録
                 currentAudio.onended = () => {
                     isPlaying = false;
                     playNext();
@@ -260,8 +261,8 @@
 
                 currentAudio.onerror = () => {
                     isPlaying = false;
-                    // 再生中かつパスが空ではない有効なエラーのときのみ表示
-                    if (currentAudio && currentAudio.src && !currentAudio.src.endsWith('/')) {
+                    // 有効なURLの時のみエラーを表示（stopボタンによる意図的なリセット時は除外）
+                    if (currentAudio && currentAudio.src && !currentAudio.src.endsWith('/') && currentAudio.src !== window.location.href) {
                         showError(`Error loading audio file: ${currentAudio.src}`);
                         playNext();
                     }
@@ -269,29 +270,15 @@
             }
         }
 
-        // スマホの自動再生制限をユーザーのタップ時に解除する関数
-        function unlockAudio() {
-            initAudio();
-            // srcがまだ空の段階でloadするとエラーになるブラウザがあるため、ダミーの無音を一度通すか、loadを外して再生の器だけ認識させる
-            try {
-                // 何も設定せずにplayして即pauseすることでオーディオコンテキストをアクティブにする
-                currentAudio.play().then(() => {
-                    currentAudio.pause();
-                }).catch(() => { /* 初回ダミーエラーは無視 */ });
-            } catch (e) {}
-        }
-
-        // 【修正・安全版】「＋」「ー」ボタンのイベント処理（ロード順の影響を受けないよう定義）
-        const pauseInput = document.getElementById('pauseInput');
-        
+        // 自作「＋」「ー」ボタンの処理
         document.getElementById('minusBtn').addEventListener('click', () => {
-            initAudio(); // プレイヤーの準備だけ行う（エラーを出すloadは呼ばない）
+            initAudio();
             let val = parseInt(pauseInput.value) || 0;
             if (val > 0) pauseInput.value = val - 1;
         });
 
         document.getElementById('plusBtn').addEventListener('click', () => {
-            initAudio(); // プレイヤーの準備だけ行う
+            initAudio();
             let val = parseInt(pauseInput.value) || 0;
             if (val < 30) pauseInput.value = val + 1;
         });
@@ -306,10 +293,11 @@
             }, 5000);
         }
 
+        // 音声を実際に再生する関数
         function playAudio(url) {
             initAudio();
-
             try {
+                // スマホ対策：常に同じインスタンスに新しいURLをセットして再生する
                 currentAudio.src = url;
                 currentAudio.play().then(() => {
                     isPlaying = true;
@@ -324,13 +312,14 @@
             }
         }
 
-        // Helper function to handle queue progression
+        // 次のキューへ進む関数
         function playNext() {
             if (playbackQueue.length > 0 && currentIndex < playbackQueue.length - 1) {
                 currentIndex++;
                 
                 const pauseSeconds = pauseInput ? parseFloat(pauseInput.value) || 0 : 3;
 
+                // タイマーを挟んでも、同じプレイヤーオブジェクトを維持しているためスマホでも再生が継続します
                 pauseTimeout = setTimeout(() => {
                     if (playbackQueue.length > 0) {
                         playAudio(playbackQueue[currentIndex]);
@@ -343,30 +332,28 @@
             }
         }
 
-        // イベントデリゲーション
+        // 個別再生ボタン（イベントデリゲーション）
         questionsContainer.addEventListener('click', (event) => {
             const button = event.target.closest('.play-audio');
             if (button) {
-                unlockAudio();
                 if (pauseTimeout) clearTimeout(pauseTimeout);
                 playbackQueue = [];
                 currentIndex = 0;
                 const url = button.getAttribute('data-audio');
-                playAudio(url);
+                playAudio(url); // ユーザーの直タップなので確実に再生されます
             }
         });
 
-        // Toggle lesson selection visibility
+        // 「Chọn bài」ボタンの処理
         const lessonSelectContainer = document.getElementById('lessonSelectContainer');
         document.getElementById('playLessonBtn').addEventListener('click', () => {
-            unlockAudio();
+            initAudio();
             lessonSelectContainer.classList.remove('hidden');
             lessonSelect.focus();
         });
 
-        // Confirm lesson selection and play audio
+        // 「Hiển thị（確定）」ボタンの処理
         document.getElementById('confirmBtn').addEventListener('click', () => {
-            unlockAudio();
             const selectedLessons = Array.from(lessonSelect.selectedOptions).map(option => parseInt(option.value));
             if (selectedLessons.length === 0) {
                 showError('Please select at least one lesson.');
@@ -382,11 +369,15 @@
             });
 
             if (pauseTimeout) clearTimeout(pauseTimeout);
+            
+            // キューを作成
             playbackQueue = questions
                 .filter(q => selectedLessons.includes(q.lesson))
                 .map(q => q.audioUrl);
             currentIndex = 0;
+
             if (playbackQueue.length > 0) {
+                // 【スマホ完全対策】タップした瞬間に、ダミーを挟まず直接1本目の音声を再生開始する
                 playAudio(playbackQueue[currentIndex]);
             } else {
                 showError('No audio files available for selected lessons.');
@@ -394,16 +385,19 @@
             lessonSelectContainer.classList.add('hidden');
         });
 
-        // Play all
+        // 「Chọn tất cả」ボタンの処理
         document.getElementById('playAllBtn').addEventListener('click', () => {
-            unlockAudio();
             document.querySelectorAll('.lesson-div').forEach(div => {
                 div.classList.remove('hidden');
             });
             if (pauseTimeout) clearTimeout(pauseTimeout);
+            
+            // キューを作成
             playbackQueue = questions.map(q => q.audioUrl);
             currentIndex = 0;
+
             if (playbackQueue.length > 0) {
+                // 【スマホ完全対策】タップした瞬間に、ダミーを挟まず直接1本目の音声を再生開始する
                 playAudio(playbackQueue[currentIndex]);
             } else {
                 showError('No audio files available.');
@@ -411,22 +405,23 @@
             lessonSelectContainer.classList.add('hidden');
         });
 
-        // Stop playback
+        // 「Dừng」ボタンの処理（エラー赤枠のバグも修正済み）
         document.getElementById('stopBtn').addEventListener('click', () => {
             if (pauseTimeout) clearTimeout(pauseTimeout); 
             
             if (currentAudio) {
-                // ストップ時のエラー誤作動を防ぐため一時的にリスナーを外す
+                // ストップ時のエラー誤作動を防ぐため一時的にリスナーを退避
                 currentAudio.onerror = null; 
                 currentAudio.pause();
                 
-                // 安全に初期化
-                currentAudio.removeAttribute('src');
+                // プレイヤーを安全にリセット
+                currentAudio.src = ""; 
+                try { currentAudio.load(); } catch(e) {}
                 
-                // リスナーの再登録
+                // 再度リスナーを登録
                 currentAudio.onerror = () => {
                     isPlaying = false;
-                    if (currentAudio && currentAudio.src && !currentAudio.src.endsWith('/')) {
+                    if (currentAudio && currentAudio.src && !currentAudio.src.endsWith('/') && currentAudio.src !== window.location.href) {
                         showError(`Error loading audio file: ${currentAudio.src}`);
                         playNext();
                     }
