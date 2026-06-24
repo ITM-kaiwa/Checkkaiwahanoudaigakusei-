@@ -90,7 +90,7 @@
     </div>
 
     <footer>
-        <p>© 2026 Tài liệu kiểm tra | Thiết kế bởi Thuận / ITM-Group, Ver2.651</p>
+        <p>© 2026 Tài liệu kiểm tra | Thiết kế bởi Thuận / ITM-Group, Ver2.652</p>
     </footer>
 
     <script>
@@ -228,7 +228,7 @@
                 const questionDiv = document.createElement('div');
                 questionDiv.className = 'question-card flex items-center justify-between p-3 border-b border-gray-200';
                 
-                // デフォルトは問題文を非表示(hidden)にする構造
+                // デフォルトは文章非表示(hidden)
                 questionDiv.innerHTML = `
                     <div class="flex-1 mr-4">
                         <span class="text-lg text-gray-800 font-medium hidden question-text">${q.id}: ${q.text}</span>
@@ -259,7 +259,7 @@
 
         const pauseInput = document.getElementById('pauseInput');
 
-        // 安全なプレイヤー停止処理（ラジカセを破壊せず、一時停止して巻き戻すだけに留める）
+        // 安全なプレイヤー停止処理（srcのクリアは一切せず、停止と巻き戻しのみに徹する）
         function forceResetPlayer() {
             if (pauseTimeout) {
                 clearTimeout(pauseTimeout);
@@ -281,14 +281,16 @@
                 
                 currentAudio.onended = () => {
                     isPlaying = false;
-                    playNext();
+                    if (playbackQueue.length > 0) {
+                        playNext();
+                    }
                 };
 
                 currentAudio.onerror = () => {
                     isPlaying = false;
                     if (currentAudio && currentAudio.src && !currentAudio.src.endsWith('/') && !currentAudio.src.includes('null')) {
                         showError(`Error loading audio file: ${currentAudio.src}`);
-                        playNext();
+                        if (playbackQueue.length > 0) playNext();
                     }
                 };
             }
@@ -333,7 +335,7 @@
                 }).catch(error => {
                     isPlaying = false;
                     showError(`Failed to play audio for ${url}: ${error.message}`);
-                    playNext();
+                    if (playbackQueue.length > 0) playNext();
                 });
             } catch (error) {
                 isPlaying = false;
@@ -383,15 +385,24 @@
             // 2. 「個別スピーカー」ボタンが押されたとき
             const audioButton = event.target.closest('.play-audio');
             if (audioButton) {
-                // 自動再生タイマーと連続再生キューを完全に停止・破棄する
-                forceResetPlayer(); 
                 unlockAudio(); 
 
-                playbackQueue = [];
+                // 割り込み時：走っている自動再生の予約とキューをすべて完全消去
+                if (pauseTimeout) {
+                    clearTimeout(pauseTimeout);
+                    pauseTimeout = null;
+                }
+                playbackQueue = []; 
                 currentIndex = 0;
 
+                // プレイヤーのパス破壊エラーを避けるため、srcクリアせず単に一時停止のみを行う
+                if (currentAudio) {
+                    try { currentAudio.pause(); } catch(e) {}
+                }
+
+                // 選択されたURLを取得して直接再生（キューが空のため、終わっても次には進みません）
                 const url = audioButton.getAttribute('data-audio');
-                playAudio(url); // 単発再生を実行
+                playAudio(url);
             }
         });
 
@@ -405,6 +416,7 @@
 
         // 青のボタンの確定「Hiển thị」の処理 【仕様：文字を目隠し状態にして表示。自動再生は絶対にしない】
         document.getElementById('confirmBtn').addEventListener('click', () => {
+            // パス破壊バグを避けるため、安全に一時停止とタイマークリアのみを行う
             forceResetPlayer(); 
             unlockAudio();
 
@@ -419,7 +431,7 @@
                 if (selectedLessons.includes(lessonNum)) {
                     div.classList.remove('hidden');
                     
-                    // すべての問題文をデフォルトの「非表示（目隠し状態）」に徹底リセット
+                    // すべての問題文をデフォルトの「非表示（目隠し状態）」にリセット
                     div.querySelectorAll('.question-card').forEach(card => {
                         card.querySelector('.question-text').classList.add('hidden');
                         card.querySelector('.placeholder-text').classList.remove('hidden');
@@ -441,7 +453,7 @@
             document.querySelectorAll('.lesson-div').forEach(div => {
                 div.classList.remove('hidden');
                 
-                // 【仕様通り修正】全体再生のときも、デフォルトは文字を「非表示（目隠し状態）」にする
+                // 全体再生のときも、デフォルトは文字を「非表示（目隠し状態）」にする
                 div.querySelectorAll('.question-card').forEach(card => {
                     card.querySelector('.question-text').classList.add('hidden');
                     card.querySelector('.placeholder-text').classList.remove('hidden');
@@ -462,7 +474,7 @@
 
         // 「Dừng」ボタンの処理
         document.getElementById('stopBtn').addEventListener('click', () => {
-            forceResetPlayer(); // 安全にタイマー消滅と音声停止
+            forceResetPlayer(); // 安全に一時停止して巻き戻す
             errorMessageDiv.classList.add('hidden');
             lessonSelectContainer.classList.add('hidden');
         });
