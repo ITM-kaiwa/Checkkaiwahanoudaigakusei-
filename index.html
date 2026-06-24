@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IQー会話チェック反応（大学生向け）</title>
+    <title>IQ　会話チェック反応（大学生向け）</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Custom styles for multi-select and improved aesthetics */
@@ -90,7 +90,7 @@
     </div>
 
     <footer>
-        <p>© 2026 Tài liệu kiểm tra | Thiết kế bởi Thuận / Jyotaro, Ver2.61</p>
+        <p>© 2026 Tài liệu kiểm tra | Thiết kế bởi Thuận / ITM-Group, Ver2.62</p>
     </footer>
 
     <script>
@@ -228,11 +228,16 @@
                 const questionDiv = document.createElement('div');
                 questionDiv.className = 'question-card flex items-center justify-between p-3 border-b border-gray-200';
                 
+                // デフォルト非表示(hidden)にする目隠し構造を完全復活
                 questionDiv.innerHTML = `
                     <div class="flex-1 mr-4">
-                        <span class="text-lg text-gray-800 font-medium question-text">${q.id}: ${q.text}</span>
+                        <span class="text-lg text-gray-800 font-medium hidden question-text">${q.id}: ${q.text}</span>
+                        <span class="text-lg text-gray-400 italic placeholder-text">${q.id}: (Nghe âm thanh)</span>
                     </div>
                     <div class="flex items-center space-x-3">
+                        <button class="view-text bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-md text-sm font-semibold hover:bg-indigo-100 transition duration-150 active:scale-95 select-none">
+                            Xem
+                        </button>
                         <button class="play-audio bg-teal-100 p-2 rounded-full hover:bg-teal-200 transition duration-200 active:scale-95">
                             <svg class="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707A1 1 0 0112 5v14a1 1 0 01-1.707.707L5.586 15z"></path>
@@ -307,6 +312,7 @@
             }, 5000);
         }
 
+        // 音声再生コア
         function playAudio(url) {
             initAudio();
             try {
@@ -324,6 +330,7 @@
             }
         }
 
+        // 自動再生の次へ進む
         function playNext() {
             if (playbackQueue.length > 0 && currentIndex < playbackQueue.length - 1) {
                 currentIndex++;
@@ -340,13 +347,34 @@
             }
         }
 
-        // 個別音声ボタンの処理（イベントデリゲーション）
+        // 各種カード内ボタンの処理（イベントデリゲーション）
         questionsContainer.addEventListener('click', (event) => {
+            // 1. 「Xem（見る）」ボタンが押されたとき
+            const viewButton = event.target.closest('.view-text');
+            if (viewButton) {
+                initAudio();
+                const card = viewButton.closest('.question-card');
+                const textNode = card.querySelector('.question-text');
+                const placeholderNode = card.querySelector('.placeholder-text');
+                
+                if (textNode.classList.contains('hidden')) {
+                    textNode.classList.remove('hidden');
+                    placeholderNode.classList.add('hidden');
+                    viewButton.textContent = 'Ẩn';
+                } else {
+                    textNode.classList.add('hidden');
+                    placeholderNode.classList.remove('hidden');
+                    viewButton.textContent = 'Xem';
+                }
+                return;
+            }
+
+            // 2. 「個別スピーカー」ボタンが押されたとき
             const audioButton = event.target.closest('.play-audio');
             if (audioButton) {
                 unlockAudio();
                 
-                // 【仕様修正ポイント】個別再生時は走っている自動再生のタイマーとキューを完全にリセット
+                // 【超重要】自動再生の進行を完全にその場でシャットダウンする
                 if (pauseTimeout) {
                     clearTimeout(pauseTimeout);
                     pauseTimeout = null;
@@ -356,9 +384,8 @@
                 
                 if (currentAudio) currentAudio.pause();
 
+                // 単発再生として処理（再生終了してもplayNextに進みません）
                 const url = audioButton.getAttribute('data-audio');
-                
-                // スマホ用にsrcを上書きして単発再生（キューがないため終わっても次へ進みません）
                 try {
                     currentAudio.src = url;
                     currentAudio.play().then(() => {
@@ -382,7 +409,7 @@
             lessonSelect.focus();
         });
 
-        // 青のボタンの確定「Hiển thị」の処理（表示のみ）
+        // 青のボタンの確定「Hiển thị」の処理【仕様：文字を目隠し状態にして表示、自動再生なし】
         document.getElementById('confirmBtn').addEventListener('click', () => {
             unlockAudio();
             if (pauseTimeout) clearTimeout(pauseTimeout);
@@ -405,6 +432,13 @@
                 const lessonNum = parseInt(div.dataset.lesson);
                 if (selectedLessons.includes(lessonNum)) {
                     div.classList.remove('hidden');
+                    
+                    // 【仕様復活】課を選択した時は、すべての問題文をデフォルトの「目隠し状態」にリセットする
+                    div.querySelectorAll('.question-card').forEach(card => {
+                        card.querySelector('.question-text').classList.add('hidden');
+                        card.querySelector('.placeholder-text').classList.remove('hidden');
+                        card.querySelector('.view-text').textContent = 'Xem';
+                    });
                 } else {
                     div.classList.add('hidden');
                 }
@@ -413,16 +447,24 @@
             lessonSelectContainer.classList.add('hidden');
         });
 
-        // 緑のボタン「Chọn tất cả」の処理（全表示 ＋ 自動再生）
+        // 緑のボタン「Chọn tất cả」の処理【仕様：すべての文字を強制全表示 ＋ 最初から自動再生】
         document.getElementById('playAllBtn').addEventListener('click', () => {
             unlockAudio();
-            
-            document.querySelectorAll('.lesson-div').forEach(div => {
-                div.classList.remove('hidden');
-            });
-            
             if (pauseTimeout) clearTimeout(pauseTimeout);
             
+            // すべての課のカードを表示
+            document.querySelectorAll('.lesson-div').forEach(div => {
+                div.classList.remove('hidden');
+                
+                // 【仕様復活】すべての問題文を一括で「全表示（オープン）」に切り替える
+                div.querySelectorAll('.question-card').forEach(card => {
+                    card.querySelector('.question-text').classList.remove('hidden');
+                    card.querySelector('.placeholder-text').classList.add('hidden');
+                    card.querySelector('.view-text').textContent = 'Ẩn';
+                });
+            });
+            
+            // すべての音声のキューを作成して強制自動再生スタート
             playbackQueue = questions.map(q => q.audioUrl);
             currentIndex = 0;
 
