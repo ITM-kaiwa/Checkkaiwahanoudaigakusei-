@@ -64,17 +64,17 @@
                 <span class="text-xs opacity-85 block">全体一括再生</span>
                 <span class="text-base font-semibold block mt-0.5">Phát tất cả</span>
             </button>
-            <button id="playLessonBtn" class="w-full bg-indigo-500 text-white px-2 py-3 rounded-lg hover:bg-indigo-600 transition duration-200 shadow-md font-medium text-center flex flex-col justify-center items-center">
+            <button id="playLessonBtn" class="w-full bg-indigo-50 text-white px-2 py-3 rounded-lg hover:bg-indigo-600 transition duration-200 shadow-md font-medium text-center flex flex-col justify-center items-center bg-indigo-500">
                 <span class="text-xs opacity-85 block">課別一括再生</span>
                 <span class="text-sm font-semibold block mt-1 whitespace-nowrap">Phát tự động theo bài</span>
             </button>
-            <button id="individualPlayBtn" class="w-full bg-indigo-100 text-indigo-700 px-2 py-3 rounded-lg hover:bg-indigo-200 transition duration-200 shadow-md font-semibold text-center flex flex-col justify-center items-center">
-                <span class="text-xs opacity-85 block">個別再生</span>
-                <span class="text-base font-bold block mt-0.5">Phát từng câu</span>
-            </button>
-            <button id="shufflePlayBtn" class="w-full bg-slate-400 text-white px-2 py-3 rounded-lg hover:bg-slate-500 transition duration-200 shadow-md font-medium text-center flex flex-col justify-center items-center">
+            <button id="shufflePlayBtn" class="w-full bg-indigo-100 text-indigo-700 px-2 py-3 rounded-lg hover:bg-indigo-200 transition duration-200 shadow-md font-bold text-center flex flex-col justify-center items-center">
                 <span class="text-xs opacity-85 block">選択課<br>シャッフル再生</span>
                 <span class="text-base font-semibold block mt-0.5">Xáo trộn bài chọn</span>
+            </button>
+            <button id="individualPlayBtn" class="w-full bg-slate-400 text-white px-2 py-3 rounded-lg hover:bg-slate-500 transition duration-200 shadow-md font-medium text-center flex flex-col justify-center items-center">
+                <span class="text-xs opacity-85 block">個別再生</span>
+                <span class="text-base font-bold block mt-0.5">Phát từng câu</span>
             </button>
         </div>
         
@@ -101,7 +101,7 @@
             </button>
             
             <div class="mt-4 text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-1 rounded-full border border-slate-200 select-none">
-                Ver2.820a
+                Ver2.822c
             </div>
         </div>
 
@@ -175,13 +175,13 @@
     </div>
 
     <footer>
-        <p>© 2026 Tài liệu kiểm tra | Thiết kế bởi Thuận / ITM-Group, Ver2.822b</p>
+        <p>© 2025 Tài liệu kiểm tra | Thiết kế bởi Thuận / © 2026 ITM-Group.</p>
     </footer>   
 
     <script>
     
 // Sample question data
-        const questions = [
+   const questions = [
                 
         // ==================== LESSON 1 ====================
             { "lesson": 1, "id": "1-1a", "text": "おなまえは なんですか。/ なまえを いってください/ おしえてください。", "audioUrl": "https://itm-kaiwa.github.io/Checkkaiwahanoudaigakusei-/1.1a.mp3" },
@@ -560,7 +560,7 @@
             { "lesson": 25, "id": "25-10", "text": "<ruby>〇〇<rt>まるまる</rt></ruby>さんは、<ruby>健康<rt>けんこう</rt></ruby>と<ruby>家族<rt>かぞく</rt></ruby>と<ruby>友達<rt>ともだち</rt></ruby>と、<ruby>何<rt>なに</rt></ruby>があったら<ruby>幸<rt>しあわ</rt></ruby>せ/うれしい？ どうして？", "audioUrl": "https://itm-kaiwa.github.io/Checkkaiwahanoudaigakusei-/25.10.mp3" }
         
         ];
- // 1. 各課のドロップダウンメニューを初期生成する処理
+// 1. 各課のドロップダウンメニューを初期生成する処理
         // 重複を除いた課のリストを作成し、昇順ソート
         const lessons = [...new Set(questions.map(q => q.lesson))].sort((a, b) => a - b);
 
@@ -820,18 +820,18 @@
             lessonSelect.focus();
         });
 
-        // 「個別再生」ボタンの処理
-        document.getElementById('individualPlayBtn').addEventListener('click', () => {
+        // 「選択課シャッフル再生」ボタンの処理（Aパートの並び順に追従）
+        document.getElementById('shufflePlayBtn').addEventListener('click', () => {
             unlockAudio();
-            mode = 'display'; 
+            mode = 'shuffle'; 
             lessonSelectContainer.classList.remove('hidden');
             lessonSelect.focus();
         });
 
-        // 「選択課シャッフル再生」ボタンの処理
-        document.getElementById('shufflePlayBtn').addEventListener('click', () => {
+        // 「個別再生」ボタンの処理（Aパートの並び順に追従）
+        document.getElementById('individualPlayBtn').addEventListener('click', () => {
             unlockAudio();
-            mode = 'shuffle'; 
+            mode = 'display'; 
             lessonSelectContainer.classList.remove('hidden');
             lessonSelect.focus();
         });
@@ -846,7 +846,7 @@
                 showError('Please select at least one lesson.');
                 return;
             }
-                        
+                                
             // 選択された課の質問データを抽出
             let filteredQuestions = questions.filter(q => selectedLessons.includes(q.lesson));
             
@@ -879,10 +879,10 @@
             forceResetPlayer();
             unlockAudio();
             mode = 'play'; 
-                        
+                                
             // 全データをそのまま通常の順番で全描画
             renderQuestions(questions);
-                        
+                                
             playbackQueue = questions.map(q => q.audioUrl);
             currentIndex = 0;
 
