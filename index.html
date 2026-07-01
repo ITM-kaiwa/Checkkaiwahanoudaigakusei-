@@ -100,7 +100,7 @@
             </button>
                         
             <div class="mt-4 text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-1 rounded-full border border-slate-200 select-none">
-                Ver2.920b
+                Ver2.940a
             </div>
         </div>
 
@@ -567,7 +567,7 @@
             { "lesson": 25, "id": "25-10", "text": "<ruby>〇〇<rt>まるまる</rt></ruby>さんは、<ruby>健康<rt>けんこう</rt></ruby>と<ruby>家族<rt>かぞく</rt></ruby>と<ruby>友達<rt>ともだち</rt></ruby>と、<ruby>何<rt>なに</rt></ruby>があったら<ruby>幸<rt>しあわ</rt></ruby>せ/うれしい？ どうして？", "viText": "Đối với bạn 〇〇, giữa sức khỏe, gia đình và bạn bè thân thiết, chỉ cần có được yếu tố nào là bạn đã thấy hạnh phúc / vui sướng nhất? Tại sao?", "audioUrl": "https://itm-kaiwa.github.io/Checkkaiwahanoudaigakusei-/25.10.mp3" }
         ];
         // =============================================================================
-        // C-PART: LOGIC & AUDIO CONTROL SYSTEM (Ver2.920b)
+        // C-PART: LOGIC & AUDIO CONTROL SYSTEM (Ver2.940)
         // =============================================================================
 
         let currentAudio = null;
@@ -627,20 +627,34 @@
                 opt.textContent = `Bài ${l} (第${l}課)`;
                 lessonSelect.appendChild(opt);
             });
-            // 初期状態はどこも選択されていない状態にする
             lessonSelect.selectedIndex = -1;
         }
 
-        // --- Preset Range Select Buttons ---
+        // --- Preset Range Select Buttons (🌟連動トリガー修復) ---
         document.querySelectorAll('.preset-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
+                if (!lessonSelect) return;
+                
                 const start = parseInt(btn.getAttribute('data-start'));
                 const end = parseInt(btn.getAttribute('data-end'));
                 
+                // 一旦すべての選択を解除
+                for (let i = 0; i < lessonSelect.options.length; i++) {
+                    lessonSelect.options[i].selected = false;
+                }
+                
+                // 範囲内の課を選択状態にする
                 for (let i = 0; i < lessonSelect.options.length; i++) {
                     const val = parseInt(lessonSelect.options[i].value);
-                    lessonSelect.options[i].selected = (val >= start && val <= end);
+                    if (val >= start && val <= end) {
+                        lessonSelect.options[i].selected = true;
+                    }
+                }
+
+                // 🌟【重要】範囲選択が完了した瞬間に、「表示 Hiển thị」の確定処理を自動で実行する
+                if (confirmBtn) {
+                    confirmBtn.click();
                 }
             });
         });
@@ -691,7 +705,10 @@
 
         // --- Build Queue and Play ---
         function startQueuePlayback(items) {
-            terminatePlayback();
+            isPlayingQueue = false; 
+            if (currentAudio) {
+                try { currentAudio.pause(); currentAudio.currentTime = 0; } catch(e) {}
+            }
             showError('');
 
             if (items.length === 0) {
@@ -744,7 +761,7 @@
             });
         }
 
-        // --- Render UI Cards Function (Ver2.920) ---
+        // --- Render UI Cards Function (Ver2.940) ---
         function renderCards(targetQuestions) {
             questionsContainer.innerHTML = '';
             showError('');
@@ -827,7 +844,8 @@
                     </svg>
                 `;
                 playBtn.onclick = () => {
-                    terminatePlayback();
+                    isPlayingQueue = false;
+                    if (currentAudio) { try { currentAudio.pause(); } catch(e){} }
                     highlightCard(q.id);
                     currentAudio = new Audio(q.audioUrl);
                     currentAudio.play().catch(e => {
@@ -836,7 +854,7 @@
                     });
                 };
 
-                // 個別「停止」スクエアボタン（完全復活）
+                // 個別「停止」スクエアボタン
                 const inlineStopBtn = document.createElement('button');
                 inlineStopBtn.className = 'bg-red-50 text-red-600 p-2.5 rounded-lg hover:bg-red-100 border border-red-200 transition flex items-center justify-center active:scale-95 shadow-sm';
                 inlineStopBtn.title = 'Dừng';
@@ -872,26 +890,26 @@
         // 2. 選択課別一括再生
         playLessonBtn.addEventListener('click', () => {
             terminatePlayback();
-            lessonSelect.selectedIndex = -1; // リセット
+            lessonSelect.selectedIndex = -1;
             lessonSelectContainer.classList.remove('hidden');
-            questionsContainer.innerHTML = '<p class="text-center text-gray-500 py-8">課を選択して「表示 Hiển thị」ボタンを押してください。</p>';
+            questionsContainer.innerHTML = '<p class="text-center text-gray-500 py-8">課を選択して「表示 Hiển thị」ボタンを押してください。<br><span class="text-xs text-gray-400 block mt-1">Hãy chọn bài rồi nhấn nút "Hiển thị".</span></p>';
         });
 
         // 3. 選択課別シャッフル再生
         shufflePlayBtn.addEventListener('click', () => {
             terminatePlayback();
-            lessonSelect.selectedIndex = -1; // リセット
+            lessonSelect.selectedIndex = -1;
             lessonSelectContainer.classList.remove('hidden');
-            questionsContainer.innerHTML = '<p class="text-center text-gray-500 py-8">シャッフルする課を選択して「表示 Hiển thị」ボタンを押してください。</p>';
+            questionsContainer.innerHTML = '<p class="text-center text-gray-500 py-8">シャッフルする課を選択して「表示 Hiển thị」ボタンを押してください。<br><span class="text-xs text-gray-400 block mt-1">Hãy chọn bài muốn xáo trộn rồi nhấn nút "Hiển thị".</span></p>';
             confirmBtn.setAttribute('data-mode', 'shuffle');
         });
 
         // 4. 個別再生（単発表示モード）
         individualPlayBtn.addEventListener('click', () => {
             terminatePlayback();
-            lessonSelect.selectedIndex = -1; // リセット
+            lessonSelect.selectedIndex = -1;
             lessonSelectContainer.classList.remove('hidden');
-            questionsContainer.innerHTML = '<p class="text-center text-gray-500 py-8">表示したい課を選択して「表示 Hiển thị」ボタンを押してください。</p>';
+            questionsContainer.innerHTML = '<p class="text-center text-gray-500 py-8">表示したい課を選択して「表示 Hiển thị」ボタンを押してください。<br><span class="text-xs text-gray-400 block mt-1">Hãy chọn bài muốn hiển thị rồi nhấn nút "Hiển thị".</span></p>';
             confirmBtn.setAttribute('data-mode', 'individual');
         });
 
