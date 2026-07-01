@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IQ 会話反応チェック（大学生向け）</title>
+    <title>IQ 会話チェック反応（大学生向け）</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Custom styles for multi-select and improved aesthetics */
@@ -57,12 +57,13 @@
 </head>
 <body class="gradient-bg font-sans min-h-screen">
     <div class="container mx-auto p-6">
-        <h1 class="text-4xl font-extrabold text-center text-indigo-800 mb-8">IQ 会話反応チェック（大学生向け）</h1>
+        <h1 class="text-4xl font-extrabold text-center text-indigo-800 mb-8">IQ 会話チェック反応（大学生向け）</h1>
                 
         <div class="mb-4 flex flex-wrap justify-center items-center gap-4">
             <button id="playAllBtn" class="bg-teal-500 text-white px-6 py-3 rounded-lg hover:bg-teal-600 transition duration-200 shadow-md font-medium">全体一括再生 Phát tất cả</button>
             <button id="playLessonBtn" class="bg-indigo-500 text-white px-6 py-3 rounded-lg hover:bg-indigo-600 transition duration-200 shadow-md font-medium">個別一括再生 Phát tự động theo bài</button>
             <button id="individualPlayBtn" class="bg-indigo-100 text-indigo-700 px-6 py-3 rounded-lg hover:bg-indigo-200 transition duration-200 shadow-md font-semibold">個別再生 Phát từng câu</button>
+            <button id="shufflePlayBtn" class="bg-amber-500 text-white px-6 py-3 rounded-lg hover:bg-amber-600 transition duration-200 shadow-md font-medium">選択課シャッフル再生 Xáo trộn bài chọn</button>
         </div>
 
         <div class="mb-6 flex flex-col items-center">
@@ -91,14 +92,6 @@
         <div id="lessonSelectContainer" class="hidden mb-8 flex justify-center space-x-4">
             <select id="lessonSelect" multiple class="border border-gray-300 focus:ring-2 focus:ring-indigo-500">
             </select>
-//---シャッフルボタンの設置
-            <div class="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg border border-gray-300 shadow-sm select-none">
-                <input type="checkbox" id="shuffleCheck" class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer">
-                <label for="shuffleCheck" class="text-sm font-medium text-gray-700 cursor-pointer">
-                    シャッフルする <span class="text-xs text-gray-400 block italic font-light">Xáo trộn câu hỏi</span>
-                </label>
-            </div>
-            
             <button id="confirmBtn" class="bg-teal-500 text-white px-4 py-2 rounded-lg hover:bg-teal-600 transition duration-200 shadow-md">表示 Hiển thị</button>
         </div>
 
@@ -121,7 +114,7 @@
                 <div>
                     <h3 class="text-base font-semibold text-teal-300 mb-1">1. 概要 / Tổng quan</h3>
                     <p class="text-slate-300 pl-4">
-                        このWebアプリは、学生向けの日本語会話反応トレーニングツールです。<br>
+                        このWebアプリは、大学生向けの日本語会話チェック反応トレーニングツールです。<br>
                         Ứng dụng Web này là công cụ luyện tập phản xạ kiểm tra hội thoại tiếng Nhật dành cho sinh viên đại học.
                     </p>
                 </div>
@@ -141,12 +134,12 @@
                             <span class="text-slate-400 italic font-light pl-4 block">Chỉ hiển thị các thẻ của bài học được chọn từ danh sách thả xuống để kiểm tra và phát từng câu một.</span>
                         </li>
                         <li>
+                            <strong>選択課シャッフル再生 Xáo trộn bài chọn:</strong> 選択した課の質問文カードをランダムな順番に並び替えて自動連続再生します。<br>
+                            <span class="text-slate-400 italic font-light pl-4 block">Trộn ngẫu nhiên thứ tự các thẻ câu hỏi trong bài được chọn và tự động phát liên tục.</span>
+                        </li>
+                        <li>
                             <strong>再生間隔 Khoảng dừng:</strong> 音声が流れた後の次の音声までの「秒数」を設定できます。<br>
-                            「秒数」は多少のずれがあるので調整して、ご確認してください。<br>
-                            <span class="text-slate-400 italic font-light pl-4 block">
-                                Có thể cài đặt "số giây" tạm dừng giữa file âm thanh hiện tại và file tiếp theo.<br>
-                            Có thể có sự sai lệch nhỏ về "giây", vì vậy vui lòng kiểm tra và điều chỉnh cho phù hợp.
-                            </span>
+                            <span class="text-slate-400 italic font-light pl-4 block">Có thể cài đặt "số giây" tạm dừng giữa file âm thanh hiện tại và file tiếp theo.</span>
                         </li>
                         <li>
                             <strong>Xem / Ẩn:</strong> 各質問の日本語テキストを個別に表示・非表示に切り替えます。<br>
@@ -166,10 +159,10 @@
     </div>
 
     <footer>
-        <p>©2025 Thiết kế bởi Thuận / ©2026 Sản phẩm phát triển bởi ITM-Group, Ver2.801</p>
+        <p>© 2026 Tài liệu kiểm tra | Thiết kế bởi Thuận / ITM-Group, Ver2.802</p>
     </footer>   
 
-    <script>        
+    <script>
 // Sample question data
         const questions = [
                 
@@ -550,7 +543,7 @@
             { "lesson": 25, "id": "25-10", "text": "<ruby>〇〇<rt>まるまる</rt></ruby>さんは、<ruby>健康<rt>けんこう</rt></ruby>と<ruby>家族<rt>かぞく</rt></ruby>と<ruby>友達<rt>ともだち</rt></ruby>と、<ruby>何<rt>なに</rt></ruby>があったら<ruby>幸<rt>しあわ</rt></ruby>せ/うれしい？ どうして？", "audioUrl": "https://itm-kaiwa.github.io/Checkkaiwahanoudaigakusei-/25.10.mp3" }
         
         ];
-    // Group questions by lesson
+   // Group questions by lesson
         const lessons = [...new Set(questions.map(q => q.lesson))].sort((a, b) => a - b);
 
         // Populate lesson select dropdown
@@ -574,8 +567,6 @@
                 const questionDiv = document.createElement('div');
                 questionDiv.className = 'question-card flex flex-col p-3 border-b border-gray-200';
                                         
-                // 日本語テキスト、 placeholder、および将来用のベトナム語テキスト（デフォルト非表示）
-                // ボタンエリアに「Dịch（翻訳）」ボタンを増設しました
                 questionDiv.innerHTML = `
                     <div class="flex items-center justify-between w-full">
                         <div class="flex-1 mr-4 flex flex-col">
@@ -614,13 +605,13 @@
         let playbackQueue = [];
         let currentIndex = 0;
         let pauseTimeout = null;
-        let mode = 'display'; // 'play' = 連続再生モード, 'display' = 表示のみモード
+        let mode = 'display'; // 'play' = 通常連続再生, 'shuffle' = シャッフル連続再生, 'display' = 表示のみ
 
         const pauseInput = document.getElementById('pauseInput');
         const lessonSelectContainer = document.getElementById('lessonSelectContainer');
         const errorMessageDiv = document.getElementById('errorMessage');
 
-        // 配列をランダムに並び替える関数 (Fisher-Yates Shuffle)
+        // Fisher-Yates アルゴリズムによる安全なシャッフル関数
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -653,7 +644,7 @@
                                         
                 currentAudio.onended = () => {
                     isPlaying = false;
-                    if (playbackQueue.length > 0 && mode === 'play') {
+                    if (playbackQueue.length > 0 && (mode === 'play' || mode === 'shuffle')) {
                         playNext();
                     }
                 };
@@ -662,7 +653,7 @@
                     isPlaying = false;
                     if (currentAudio && currentAudio.src && !currentAudio.src.endsWith('/') && !currentAudio.src.includes('null')) {
                         showError(`Error loading audio file: ${currentAudio.src}`);
-                        if (playbackQueue.length > 0 && mode === 'play') playNext();
+                        if (playbackQueue.length > 0 && (mode === 'play' || mode === 'shuffle')) playNext();
                     }
                 };
             }
@@ -707,7 +698,7 @@
                     if (error.name !== 'AbortError') {
                         isPlaying = false;
                         showError(`Failed to play audio: ${error.message}`);
-                        if (playbackQueue.length > 0 && mode === 'play') playNext();
+                        if (playbackQueue.length > 0 && (mode === 'play' || mode === 'shuffle')) playNext();
                     }
                 });
             } catch (error) {
@@ -723,7 +714,7 @@
                 const pauseSeconds = pauseInput ? parseFloat(pauseInput.value) || 0 : 3;
 
                 pauseTimeout = setTimeout(() => {
-                    if (playbackQueue.length > 0 && mode === 'play') {
+                    if (playbackQueue.length > 0 && (mode === 'play' || mode === 'shuffle')) {
                         playAudio(playbackQueue[currentIndex]);
                     }
                 }, pauseSeconds * 1000);
@@ -755,7 +746,7 @@
                 return;
             }
 
-            // 2. 「Dịch（翻訳）」ボタンが押されたとき（新設）
+            // 2. 「Dịch（翻訳）」ボタンが押されたとき
             const transButton = event.target.closest('.view-translation');
             if (transButton) {
                 createAndSetupPlayer();
@@ -776,7 +767,7 @@
             const audioButton = event.target.closest('.play-audio');
             if (audioButton) {
                 forceResetPlayer();
-                mode = 'display'; // 個別再生時は連続再生をストップ
+                mode = 'display'; 
 
                 const url = audioButton.getAttribute('data-audio');
                 playAudio(url);
@@ -795,7 +786,7 @@
         // 「個別一括再生 Phát tự động theo bài」ボタンの処理
         document.getElementById('playLessonBtn').addEventListener('click', () => {
             unlockAudio();
-            mode = 'play'; // 連続再生モード
+            mode = 'play'; 
             lessonSelectContainer.classList.remove('hidden');
             lessonSelect.focus();
         });
@@ -803,7 +794,15 @@
         // 「個別再生 Phát từng câu」ボタンの処理
         document.getElementById('individualPlayBtn').addEventListener('click', () => {
             unlockAudio();
-            mode = 'display'; // 表示のみモード
+            mode = 'display'; 
+            lessonSelectContainer.classList.remove('hidden');
+            lessonSelect.focus();
+        });
+
+        // 新設：「選択課シャッフル再生 Xáo trộn bài chọn」ボタンの処理
+        document.getElementById('shufflePlayBtn').addEventListener('click', () => {
+            unlockAudio();
+            mode = 'shuffle'; // シャッフル再生モードを設定
             lessonSelectContainer.classList.remove('hidden');
             lessonSelect.focus();
         });
@@ -837,25 +836,21 @@
                 }
             });
 
-            // 「個別一括再生」モード、または新設の「シャッフルチェックボックス」がある場合のロジック
-            // 後ほどAパートに設置するチェックボックスのIDを「shuffleCheck」として連動できるようにしています
-            const shuffleCheck = document.getElementById('shuffleCheck');
-            const isShuffleWindow = shuffleCheck ? shuffleCheck.checked : false;
-
-            if (mode === 'play' || isShuffleWindow) {
+            // 再生キューの作成処理
+            if (mode === 'play' || mode === 'shuffle') {
                 let filteredQuestions = questions.filter(q => selectedLessons.includes(q.lesson));
                 
-                // 【新設】シャッフルにチェックが入っていたら、選択された質問のみ順序をシャッフル
-                if (isShuffleWindow) {
+                // モードがshuffleの場合、抽出した配列順序をランダムに並び替える
+                if (mode === 'shuffle') {
                     filteredQuestions = shuffleArray([...filteredQuestions]);
                 }
 
                 playbackQueue = filteredQuestions.map(q => q.audioUrl);
                 currentIndex = 0;
                 
-                if (playbackQueue.length > 0 && mode === 'play') {
+                if (playbackQueue.length > 0) {
                     playAudio(playbackQueue[currentIndex]);
-                } else if (playbackQueue.length === 0) {
+                } else {
                     showError('No audio files available for selected lessons.');
                 }
             }
@@ -867,7 +862,7 @@
         document.getElementById('playAllBtn').addEventListener('click', () => {
             forceResetPlayer();
             unlockAudio();
-            mode = 'play'; // 連続再生モード
+            mode = 'play'; 
                         
             document.querySelectorAll('.lesson-div').forEach(div => {
                 div.classList.remove('hidden');
@@ -923,5 +918,4 @@
 
     </script>
 </body>
-</html>
 </html>
